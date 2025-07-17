@@ -1,0 +1,66 @@
+---
+import "../global.css";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Astro</title>
+  </head>
+  <body>
+    <h1 id="title">AI Chat</h1>
+    <section>
+      <div id="chat-container"></div>
+      <div id="input-container">
+        <input type="text" id="question" placeholder="Ask a question..." />
+        <button id="ask-button">Ask</button>
+      </div>
+    </section>
+  </body>
+</html>
+
+<script>
+  import { pipeline } from "@huggingface/transformers";
+
+  const pipe = await pipeline(
+    "text-generation",
+    "HuggingFaceTB/SmolLM2-135M-Instruct"
+  );
+
+  const chatContainer = document.getElementById(
+    "chat-container"
+  ) as HTMLDivElement;
+  const inputField = document.getElementById("question") as HTMLInputElement;
+  const sendButton = document.getElementById("ask-button") as HTMLButtonElement;
+
+  sendButton.addEventListener("click", async () => {
+    const question = inputField.value;
+    if (!question) return;
+
+    const answer = await pipe(question, {
+      max_new_tokens: 100,
+      do_sample: true,
+      temperature: 0.7,
+      top_p: 0.9,
+      top_k: 50,
+      repetition_penalty: 1.2,
+      return_full_text: false,
+    });
+    const answerText = (answer as any)[0].generated_text as string;
+
+    const userMessage = document.createElement("div");
+    userMessage.classList.add("message", "user");
+    userMessage.textContent = question;
+
+    const aiMessage = document.createElement("div");
+    aiMessage.classList.add("message", "ai");
+    aiMessage.textContent = answerText;
+
+    chatContainer.appendChild(userMessage);
+    chatContainer.appendChild(aiMessage);
+    inputField.value = "";
+  });
+</script>
